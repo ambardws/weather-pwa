@@ -45,3 +45,10 @@ interface Location {
   localtime_epoch: number;
   localtime: string;
 }
+
+interface listPlace {
+  id: string;
+  name: string;
+  lon: string;
+  lat: string;
+}
