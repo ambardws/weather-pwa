@@ -23,6 +23,7 @@ const Homepage = () => {
   const [weather, setWeather] = useState<ResponeWeather[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const inputRef = useRef<any>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -306,89 +307,200 @@ const Homepage = () => {
 
         {/* Weather Cards Grid */}
         {!loading && weather.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 transition-all duration-500">
             {weather.map((item, index) => {
               const bgColor = getWeatherBackground(item.current.condition.text, item.current.is_day);
-              const isDark = bgColor === "#2C3E50" || bgColor === "#34495E" || bgColor === "#3498DB" || bgColor === "#4A90E2";
+              const temp = Math.round(item.current.temp_c);
+              const isExpanded = expandedCard === index;
 
               return (
                 <div
                   key={index}
-                  className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200"
-                  style={{ borderTop: `4px solid ${bgColor}` }}
+                  className={`
+                    group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 ease-out border border-gray-200 flex flex-col cursor-pointer overflow-hidden
+                    ${isExpanded ? 'xl:col-span-2 lg:col-span-2 md:col-span-2' : ''}
+                  `}
+                  onClick={() => setExpandedCard(isExpanded ? null : index)}
                 >
                   {/* Remove Button */}
                   <button
-                    onClick={() => removeLocation(index)}
-                    className="absolute top-3 right-3 z-10 p-1.5 bg-gray-100 hover:bg-red-100 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeLocation(index);
+                    }}
+                    className="absolute top-3 right-3 z-10 p-1.5 bg-white hover:bg-red-50 rounded-full shadow-md transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
                     title="Hapus lokasi"
                   >
-                    <XMarkIcon className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                    <XMarkIcon className="h-4 w-4 text-gray-500 hover:text-red-500 transition-colors" />
                   </button>
 
                   {/* Card Content */}
-                  <div className="p-5">
-                    {/* Location */}
-                    <div className="mb-4">
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Location Header */}
+                    <div className="mb-4 transition-all duration-500">
                       <div className="flex items-center gap-2 mb-1">
-                        <MapPinIcon className="h-4 w-4 text-gray-400" />
-                        <h3 className="text-lg font-bold text-gray-900">{item.location.name}</h3>
+                        <MapPinIcon className={`h-4 w-4 transition-all duration-500 ${isExpanded ? 'scale-125' : ''}`} style={{ color: bgColor }} />
+                        <h3 className={`font-bold text-gray-900 transition-all duration-500 ${isExpanded ? 'text-2xl' : 'text-lg'}`}>
+                          {item.location.name}
+                        </h3>
+                        <span className="ml-auto text-xs text-gray-400 whitespace-nowrap">
+                          {isExpanded ? '← Klik untuk tutup' : 'Klik untuk detail →'}
+                        </span>
                       </div>
-                      <p className="text-gray-500 text-sm">{item.location.region}</p>
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p className={`text-gray-500 transition-all duration-500 ${isExpanded ? 'text-sm' : 'text-xs'}`}>
+                        {item.location.region}
+                      </p>
+                      <p className={`text-gray-400 transition-all duration-500 ${isExpanded ? 'text-xs' : 'text-xs'}`}>
                         {formatDate(item.location.localtime)}
                       </p>
                     </div>
 
-                    {/* Weather Icon */}
-                    <div className="flex justify-center mb-4 py-2">
-                      {getWeatherIcon(item.current.condition.text, item.current.is_day)}
+                    {/* Weather Icon & Temperature */}
+                    <div className={`flex items-center ${isExpanded ? 'justify-start gap-8' : 'justify-center gap-4'} mb-4 py-3 transition-all duration-500`}>
+                      <div className={`transform transition-all duration-500 ${isExpanded ? 'scale-125 hover:scale-135' : 'scale-100 hover:scale-110'}`}>
+                        {getWeatherIcon(item.current.condition.text, item.current.is_day, isExpanded ? "w-28 h-28" : "w-16 h-16")}
+                      </div>
+                      <div className="transition-all duration-500">
+                        <h2 className={`font-bold text-gray-900 transition-all duration-500 ease-out ${isExpanded ? 'text-8xl' : 'text-4xl'}`}>
+                          {temp}°
+                        </h2>
+                        <p className={`text-gray-600 text-center transition-all duration-500 ${isExpanded ? 'text-base mt-2' : 'text-sm'}`}>
+                          {item.current.condition.text}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Temperature */}
-                    <div className="text-center mb-4">
-                      <h2 className="text-5xl font-light text-gray-900">
-                        {Math.round(item.current.temp_c)}
-                        <span className="text-2xl align-top">°</span>
-                      </h2>
-                      <p className="text-gray-600 text-sm mt-1 font-medium">{item.current.condition.text}</p>
-                    </div>
-
-                    {/* Weather Details */}
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+                    {/* Weather Stats */}
+                    <div className={`space-y-2 mt-auto transition-all duration-500 ${isExpanded ? 'space-y-3' : 'space-y-2'}`}>
+                      {/* Visibility */}
+                      <div className="flex items-center justify-between text-xs transition-all duration-300 hover:bg-gray-50 rounded-lg p-2 -mx-2">
                         <div className="flex items-center gap-2 text-gray-600">
-                          <EyeIcon className="h-4 w-4" />
+                          <EyeIcon className="h-4 w-4 transition-transform duration-300 hover:scale-110" />
                           <span>Visibility</span>
                         </div>
                         <span className="font-semibold text-gray-900">{item.current.vis_km} km</span>
                       </div>
 
-                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+                      {/* Feels Like */}
+                      <div className="flex items-center justify-between text-xs transition-all duration-300 hover:bg-gray-50 rounded-lg p-2 -mx-2">
                         <div className="flex items-center gap-2 text-gray-600">
-                          <BeakerIcon className="h-4 w-4" />
+                          <BeakerIcon className="h-4 w-4 transition-transform duration-300 hover:scale-110" />
                           <span>Feels Like</span>
                         </div>
                         <span className="font-semibold text-gray-900">{Math.round(item.current.feelslike_c)}°</span>
                       </div>
 
-                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Bars3Icon className="h-4 w-4" />
-                          <span>Humidity</span>
+                      {/* Humidity with bar */}
+                      <div className="space-y-1 transition-all duration-300 hover:bg-gray-50 rounded-lg p-2 -mx-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Bars3Icon className="h-4 w-4 transition-transform duration-300 hover:scale-110" />
+                            <span>Humidity</span>
+                          </div>
+                          <span className="font-semibold text-gray-900">{item.current.humidity}%</span>
                         </div>
-                        <span className="font-semibold text-gray-900">{item.current.humidity}%</span>
+                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all duration-700 ease-out"
+                            style={{ width: `${item.current.humidity}%` }}
+                          ></div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
+                      {/* Wind */}
+                      <div className="flex items-center justify-between text-xs transition-all duration-300 hover:bg-gray-50 rounded-lg p-2 -mx-2">
                         <div className="flex items-center gap-2 text-gray-600">
-                          <BoltIcon className="h-4 w-4" />
+                          <BoltIcon className="h-4 w-4 transition-transform duration-300 hover:scale-110" />
                           <span>Wind</span>
                         </div>
                         <span className="font-semibold text-gray-900">{item.current.wind_kph} km/h</span>
                       </div>
+
+                      {/* Additional Details (shown when expanded) */}
+                      {isExpanded && (
+                        <div className="mt-6 pt-6 border-t border-gray-200 animate-slide-down">
+                          <h4 className="text-sm font-bold text-gray-900 mb-4 animate-scale-in">Detail Cuaca</h4>
+
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {/* UV Index */}
+                            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <SunIcon className="h-5 w-5 text-yellow-500" />
+                                <span className="text-xs text-gray-600">UV Index</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.uv}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {item.current.uv <= 2 ? 'Low' : item.current.uv <= 5 ? 'Moderate' : item.current.uv <= 7 ? 'High' : item.current.uv <= 10 ? 'Very High' : 'Extreme'}
+                              </p>
+                            </div>
+
+                            {/* Pressure */}
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <BeakerIcon className="h-5 w-5 text-blue-500" />
+                                <span className="text-xs text-gray-600">Pressure</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.pressure_mb}</p>
+                              <p className="text-xs text-gray-500 mt-1">mb</p>
+                            </div>
+
+                            {/* Precipitation */}
+                            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <CloudIcon className="h-5 w-5 text-cyan-500" />
+                                <span className="text-xs text-gray-600">Precipitation</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.precip_mm}</p>
+                              <p className="text-xs text-gray-500 mt-1">mm</p>
+                            </div>
+
+                            {/* Cloud Cover */}
+                            <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <CloudIcon className="h-5 w-5 text-gray-500" />
+                                <span className="text-xs text-gray-600">Cloud</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.cloud}</p>
+                              <p className="text-xs text-gray-500 mt-1">% coverage</p>
+                            </div>
+
+                            {/* Wind Degree */}
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-5">
+                              <div className="flex items-center gap-2 mb-2">
+                                <BoltIcon className="h-5 w-5 text-green-500" />
+                                <span className="text-xs text-gray-600">Wind Dir</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.wind_degree}°</p>
+                              <p className="text-xs text-gray-500 mt-1">{item.current.wind_dir}</p>
+                            </div>
+
+                            {/* Gust */}
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 transition-all duration-300 hover:scale-105 hover:shadow-md stagger-6">
+                              <div className="flex items-center gap-2 mb-2">
+                                <BoltIcon className="h-5 w-5 text-purple-500" />
+                                <span className="text-xs text-gray-600">Wind Gust</span>
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{item.current.gust_kph}</p>
+                              <p className="text-xs text-gray-500 mt-1">km/h</p>
+                            </div>
+                          </div>
+
+                          {/* Last Updated */}
+                          <div className="mt-4 text-center animate-fade-in">
+                            <p className="text-xs text-gray-500">
+                              Last updated: {item.current.last_updated}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Bottom color bar */}
+                  <div
+                    className={`h-1.5 w-full transition-all duration-500 ${isExpanded ? 'h-2' : ''}`}
+                    style={{ backgroundColor: bgColor }}
+                  ></div>
                 </div>
               );
             })}
