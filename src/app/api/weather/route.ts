@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
       `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_APP_KEY}&q=${location}&aqi=no`
     );
 
-    console.log(`res}`, response);
-
     if (!response.ok) {
       throw new Error(`Weather API responded with status ${response.status}`);
     }
